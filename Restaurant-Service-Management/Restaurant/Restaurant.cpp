@@ -527,7 +527,7 @@ namespace
         LinkedQueue<Order*> temp;
         Order* order = nullptr;
 
-        cout << sectionLabel << " — count " << q.getCount() << ", IDs: ";
+        cout << sectionLabel << " - count " << q.getCount() << ", IDs: ";
 
         while (q.dequeue(order))
         {
@@ -549,7 +549,7 @@ namespace
         Order* order = nullptr;
         int pri = 0;
 
-        cout << "Pending OVG — count " << pq.getCount() << ", IDs: ";
+        cout << "Pending OVG - count " << pq.getCount() << ", IDs: ";
 
         while (pq.dequeue(order, pri))
         {
@@ -988,7 +988,7 @@ void Restaurant::WritePhase2OutputFile(const char* path,
 
     out << endl << "--- Statistics ---" << endl;
     out << "Total orders placed: " << totalOrders << endl;
-    out << "Counts by type — ODG: " << orderTypeCounts[0] << " ODN: " << orderTypeCounts[1] << " OT: " << orderTypeCounts[2]
+    out << "Counts by type - ODG: " << orderTypeCounts[0] << " ODN: " << orderTypeCounts[1] << " OT: " << orderTypeCounts[2]
         << " OVC: " << orderTypeCounts[3] << " OVG: " << orderTypeCounts[4] << " OVN: " << orderTypeCounts[5] << endl;
     out << "Total chefs: " << totalChefs << " (CS: " << chefsCS << ", CN: " << chefsCN << ')' << endl;
     out << "Total scooters: " << totalScooters << " (single class in this build)" << endl;
