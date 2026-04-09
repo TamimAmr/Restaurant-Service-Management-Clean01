@@ -28,20 +28,16 @@ private:
     double price;
     Type type;
 
-    // Dine-in only
     int requiredSeats;
     int duration;
     bool canShare;
 
-    // Delivery only
     int distance;
 
-    // Assigned resources
     Chef* assignedChef;
     Scooter* assignedScooter;
     Table* assignedTable;
 
-    // Lifecycle timesteps (-1 = not set yet). Te = requestTimeStep.
     int assignmentTimeStep;
     int readyTimeStep;
     int inServiceTimeStep;

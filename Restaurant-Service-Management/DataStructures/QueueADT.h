@@ -1,6 +1,8 @@
-//	This is an updated version of code originally
-//  created by Frank M. Carrano and Timothy M. Henry.
-//  Copyright (c) 2017 Pearson Education, Hoboken, New Jersey.
+/*
+	This is an updated version of code originally
+	created by Frank M. Carrano and Timothy M. Henry.
+	Copyright (c) 2017 Pearson Education, Hoboken, New Jersey.
+*/
 
 /** @file QueueADT.h */
 #ifndef QUEUE_ADT_
@@ -15,5 +17,5 @@ public:
    virtual bool dequeue(T& FrontEntry) = 0;
    virtual bool peek(T& FrontEntry) const = 0;
    virtual ~QueueADT() { }
-}; // end QueueADT
+};
 #endif

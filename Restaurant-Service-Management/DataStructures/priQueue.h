@@ -4,12 +4,10 @@
 #include <iostream>
 using namespace std;
 
-//This class impelements the priority queue as a sorted list (Linked List)
-//The item with highest priority is at the front of the queue
 template <typename T>
 class priQueue
 {
-protected:  //in case you need to inherit for the project
+protected:
     priNode<T>* head;
     int count;
 
@@ -35,7 +33,6 @@ public:
         while (dequeue(tmp,p));
     }
 
-    //insert the new node in its correct position according to its priority
     void enqueue(const T& data, int priority) {
         priNode<T>* newNode = new priNode<T>(data, priority);
 

@@ -17,7 +17,6 @@ class Restaurant
 private:
     LinkedQueue<Action*> ACTIONS_LIST;
 
-    // Pending orders
     LinkedQueue<Order*> PEND_ODG;
     LinkedQueue<Order*> PEND_ODN;
     LinkedQueue<Order*> PEND_OT;
@@ -25,27 +24,22 @@ private:
     Pend_OVC PEND_OVC;
     priQueue<Order*> PEND_OVG;
 
-    // Free chefs
     LinkedQueue<Chef*> Free_CS;
     LinkedQueue<Chef*> Free_CN;
 
-    // Order history and active processing
     LinkedQueue<Order*> Cancelled_orders;
     ArrayStack<Order*> Finished_orders;
     priQueue<Order*> Cooking_Orders;
 
-    // Ready and in-service orders
     LinkedQueue<Order*> RDY_OT;
     RDY_OV RDY_OV;
     LinkedQueue<Order*> RDY_OD;
     priQueue<Order*> InServ_Orders;
 
-    // Scooter lists
     priQueue<Scooter*> Free_Scooters;
     priQueue<Scooter*> Back_Scooters;
     LinkedQueue<Scooter*> Maint_Scooters;
 
-    // Table lists
     Fit_Tables Free_Tables;
     Fit_Tables Busy_Sharable;
     Fit_Tables Busy_No_Share;
@@ -62,8 +56,6 @@ public:
 
     void PrintSummary() const;
 
-    /// Phase 1 random simulator: creates >=500 pending orders, runs until all are finished or cancelled.
-    /// Interactive mode prints the program interface each step; silent mode skips console detail (output file always written).
     void RunPhase1RandomSimulation(unsigned randomSeed, bool interactiveMode, const char* outputFilePath);
 
 private:

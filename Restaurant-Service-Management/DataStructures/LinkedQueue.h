@@ -16,7 +16,7 @@ using namespace std;
 template <typename T>
 class LinkedQueue:public QueueADT<T>
 {
-protected:  //in case you need to inherit for the project	
+protected:
 	Node<T>* backPtr;
 	Node<T>* frontPtr;
 	int count;
@@ -44,7 +44,6 @@ public :
 	void Print() const;
 	~LinkedQueue();
 };
-/////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 LinkedQueue<T>::LinkedQueue()
@@ -53,15 +52,12 @@ LinkedQueue<T>::LinkedQueue()
 	frontPtr = nullptr;
 	count = 0;
 }
-/////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 bool LinkedQueue<T>::isEmpty() const
 {
 	return (frontPtr == nullptr);
 }
-
-/////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 bool LinkedQueue<T>::enqueue(const T& newEntry)
@@ -76,10 +72,7 @@ bool LinkedQueue<T>::enqueue(const T& newEntry)
 	backPtr = newNodePtr;
 	count++;
 	return true ;
-} // end enqueue
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
+}
 
 template <typename T>
 bool LinkedQueue<T>:: dequeue(T& frntEntry)  
@@ -99,8 +92,6 @@ bool LinkedQueue<T>:: dequeue(T& frntEntry)
 	return true;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////
-
 template <typename T>
 bool LinkedQueue<T>:: peek(T& frntEntry) const 
 {
@@ -110,7 +101,6 @@ bool LinkedQueue<T>:: peek(T& frntEntry) const
 	frntEntry = frontPtr->getItem();
 	return true;
 }
-///////////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 int LinkedQueue<T>::getCount() const
