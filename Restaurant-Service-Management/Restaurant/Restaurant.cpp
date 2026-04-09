@@ -1,8 +1,5 @@
 #include "Restaurant.h"
 
-#include "../Actions/CancelAction.h"
-#include "../Actions/RequestAction.h"
-
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
@@ -1008,7 +1005,7 @@ void Restaurant::WritePhase2OutputFile(const char* path,
     out << "Scooters utilization % (busy = not free and not maintenance / scooters / timesteps): " << scooterUtilPct << '%' << endl;
 }
 
-void Restaurant::RunPhase1RandomSimulation(unsigned randomSeed, bool interactiveMode, bool useActionDrivenInput, const char* outputFilePath)
+void Restaurant::RunPhase1RandomSimulation(unsigned randomSeed, bool interactiveMode, const char* outputFilePath)
 {
     srand(randomSeed);
 
@@ -1052,71 +1049,33 @@ void Restaurant::RunPhase1RandomSimulation(unsigned randomSeed, bool interactive
         Free_Tables.enqueue(tb, TableFitPriority(tb));
     }
 
-    ////////////////////////////////////////////////////////////////
-    if (useActionDrivenInput)
+    for (int n = 1; n <= totalSimOrders; ++n)
     {
-        for (int n = 1; n <= totalSimOrders; ++n)
-        {
-            const int r = rand() % 6;
-            const Order::Type orderType = static_cast<Order::Type>(r);
-            ++orderTypeCounts[r];
+        const int r = rand() % 6;
+        const Order::Type orderType = static_cast<Order::Type>(r);
+        ++orderTypeCounts[r];
 
-            const int requestTs = rand() % 80;
-            const int orderSize = 1 + (rand() % 5);
-            const double orderPrice = 10.0 + static_cast<double>(rand() % 200);
-            const int seats = 2 + 2 * (rand() % 4);
-            const int duration = 15 + (rand() % 60);
-            const bool share = (rand() % 2) == 0;
-            const int distance = 1 + (rand() % 20);
+        const int requestTs = rand() % 80;
+        const int orderSize = 1 + (rand() % 5);
+        const double orderPrice = 10.0 + static_cast<double>(rand() % 200);
+        const int seats = 2 + 2 * (rand() % 4);
+        const int duration = 15 + (rand() % 60);
+        const bool share = (rand() % 2) == 0;
+        const int distance = 1 + (rand() % 20);
 
-            AddAction(new RequestAction(
-                requestTs,
-                n,
-                orderSize,
-                orderPrice,
-                orderType,
-                seats,
-                duration,
-                share,
-                distance));
-        }
+        Order* newOrder = new Order(
+            n,
+            requestTs,
+            orderSize,
+            orderPrice,
+            orderType,
+            seats,
+            duration,
+            share,
+            distance);
 
-        for (int i = 0; i < 200; ++i)
-        {
-            AddAction(new CancelAction(rand() % 120, 1 + (rand() % totalSimOrders)));
-        }
+        AddOrderToPendingList(newOrder);
     }
-    else
-    {
-        for (int n = 1; n <= totalSimOrders; ++n)
-        {
-            const int r = rand() % 6;
-            const Order::Type orderType = static_cast<Order::Type>(r);
-            ++orderTypeCounts[r];
-
-            const int requestTs = rand() % 80;
-            const int orderSize = 1 + (rand() % 5);
-            const double orderPrice = 10.0 + static_cast<double>(rand() % 200);
-            const int seats = 2 + 2 * (rand() % 4);
-            const int duration = 15 + (rand() % 60);
-            const bool share = (rand() % 2) == 0;
-            const int distance = 1 + (rand() % 20);
-
-            Order* newOrder = new Order(
-                n,
-                requestTs,
-                orderSize,
-                orderPrice,
-                orderType,
-                seats,
-                duration,
-                share,
-                distance);
-
-            AddOrderToPendingList(newOrder);
-        }
-    }
-    ////////////////////////////////////////////////////////////////
 
     int timeStep = 0;
 
@@ -1126,32 +1085,6 @@ void Restaurant::RunPhase1RandomSimulation(unsigned randomSeed, bool interactive
         ++timeStep;
 
         const int scooterBusyAtStepStart = totalScootersCount - Free_Scooters.getCount() - Maint_Scooters.getCount();
-
-        ////////////////////////////////////////////////////////////////
-        if (useActionDrivenInput)
-        {
-            LinkedQueue<Action*> deferredActions;
-            Action* action = nullptr;
-
-            while (ACTIONS_LIST.dequeue(action))
-            {
-                if (action && action->GetActionTime() <= timeStep)
-                {
-                    action->Act(this);
-                    delete action;
-                }
-                else
-                {
-                    deferredActions.enqueue(action);
-                }
-            }
-
-            while (deferredActions.dequeue(action))
-            {
-                ACTIONS_LIST.enqueue(action);
-            }
-        }
-        ////////////////////////////////////////////////////////////////
 
         for (int i = 0; i < 30; ++i)
         {

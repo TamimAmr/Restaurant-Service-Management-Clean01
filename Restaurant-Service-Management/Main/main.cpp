@@ -6,9 +6,9 @@
 
 using namespace std;
 
-void RunPhase1RandomSimulation(Restaurant& restaurant, unsigned randomSeed, bool interactiveMode, bool useActionDrivenInput, const char* outputFilePath)
+void RunPhase1RandomSimulation(Restaurant& restaurant, unsigned randomSeed, bool interactiveMode, const char* outputFilePath)
 {
-    restaurant.RunPhase1RandomSimulation(randomSeed, interactiveMode, useActionDrivenInput, outputFilePath);
+    restaurant.RunPhase1RandomSimulation(randomSeed, interactiveMode, outputFilePath);
 }
 
 int main()
@@ -20,10 +20,6 @@ int main()
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
     const bool interactive = (mode == 1);
-    cout << "Use ACTIONS_LIST driven input? (1 = ON, 0 = OFF): ";
-    int useActionsInput = 1;
-    cin >> useActionsInput;
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
     if (!interactive)
     {
@@ -39,7 +35,7 @@ int main()
         cout << "Random seed: " << seed << endl;
     }
 
-    RunPhase1RandomSimulation(restaurant, seed, interactive, useActionsInput != 0, "phase2_output.txt");
+    RunPhase1RandomSimulation(restaurant, seed, interactive, "phase2_output.txt");
 
     if (!interactive)
     {
