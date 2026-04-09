@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Restaurant-Service-Management/Restaurant-Service-Management.vcxproj" Id="608eb9a9-e2ec-4299-ae2c-2e4fea6a1158" />
+</Solution>

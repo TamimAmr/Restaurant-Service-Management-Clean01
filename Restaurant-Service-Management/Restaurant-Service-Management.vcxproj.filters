@@ -1,0 +1,135 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{e274e1ba-4162-4a13-b2a1-fa79160b81aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Actions">
+      <UniqueIdentifier>{3ded1e2d-4068-4651-8bd4-78546cc4e7c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\DataStructures">
+      <UniqueIdentifier>{7101b4f8-419a-4b14-a797-cd70f0b0bfbc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\DataStructures\Base">
+      <UniqueIdentifier>{493d5e5a-5d70-41cf-911c-6fff7e146a58}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\DataStructures\Derived">
+      <UniqueIdentifier>{6d6177b3-5fd3-48f4-b89a-977c52b145c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Models">
+      <UniqueIdentifier>{fc78127a-3762-4d06-bf6a-4a10bdb8e462}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Restaurant">
+      <UniqueIdentifier>{8ae5adcb-d775-49b2-9b95-eb3d54216806}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\UI">
+      <UniqueIdentifier>{bbe13bff-68a6-4799-a434-d86f7317f206}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{39b0c6e8-286e-4142-9d68-8fe07c206868}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Actions">
+      <UniqueIdentifier>{9995c2ff-f773-4626-a064-93a1741cf6de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\DataStructures">
+      <UniqueIdentifier>{5636e695-74bd-4a01-9be6-4aeb92862679}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Main">
+      <UniqueIdentifier>{7e29c763-6379-43c6-b47f-bde00ef01179}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Restaurant">
+      <UniqueIdentifier>{0a4d14f4-c9ca-4b1d-821a-0cfda82796d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\UI">
+      <UniqueIdentifier>{90edd25d-d3ab-4c09-ad18-b98d138499e5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Actions\Action.cpp">
+      <Filter>Source Files\Actions</Filter>
+    </ClCompile>
+    <ClCompile Include="Actions\CancelAction.cpp">
+      <Filter>Source Files\Actions</Filter>
+    </ClCompile>
+    <ClCompile Include="Actions\RequestAction.cpp">
+      <Filter>Source Files\Actions</Filter>
+    </ClCompile>
+    <ClCompile Include="DataStructures\Fit_Tables.cpp">
+      <Filter>Source Files\DataStructures</Filter>
+    </ClCompile>
+    <ClCompile Include="DataStructures\Pend_OVC.cpp">
+      <Filter>Source Files\DataStructures</Filter>
+    </ClCompile>
+    <ClCompile Include="DataStructures\RDY_OV.cpp">
+      <Filter>Source Files\DataStructures</Filter>
+    </ClCompile>
+    <ClCompile Include="Main\main.cpp">
+      <Filter>Source Files\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="Restaurant\Restaurant.cpp">
+      <Filter>Source Files\Restaurant</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\UI.cpp">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Actions\Action.h">
+      <Filter>Header Files\Actions</Filter>
+    </ClInclude>
+    <ClInclude Include="Actions\CancelAction.h">
+      <Filter>Header Files\Actions</Filter>
+    </ClInclude>
+    <ClInclude Include="Actions\RequestAction.h">
+      <Filter>Header Files\Actions</Filter>
+    </ClInclude>
+    <ClInclude Include="DataStructures\ArrayStack.h">
+      <Filter>Header Files\DataStructures\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="DataStructures\LinkedQueue.h">
+      <Filter>Header Files\DataStructures\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="DataStructures\Node.h">
+      <Filter>Header Files\DataStructures\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="DataStructures\priNode.h">
+      <Filter>Header Files\DataStructures\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="DataStructures\priQueue.h">
+      <Filter>Header Files\DataStructures\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="DataStructures\QueueADT.h">
+      <Filter>Header Files\DataStructures\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="DataStructures\StackADT.h">
+      <Filter>Header Files\DataStructures\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="DataStructures\Fit_Tables.h">
+      <Filter>Header Files\DataStructures\Derived</Filter>
+    </ClInclude>
+    <ClInclude Include="DataStructures\Pend_OVC.h">
+      <Filter>Header Files\DataStructures\Derived</Filter>
+    </ClInclude>
+    <ClInclude Include="DataStructures\RDY_OV.h">
+      <Filter>Header Files\DataStructures\Derived</Filter>
+    </ClInclude>
+    <ClInclude Include="Models\Chef.h">
+      <Filter>Header Files\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="Models\Order.h">
+      <Filter>Header Files\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="Models\Scooter.h">
+      <Filter>Header Files\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="Models\Table.h">
+      <Filter>Header Files\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="Restaurant\Restaurant.h">
+      <Filter>Header Files\Restaurant</Filter>
+    </ClInclude>
+    <ClInclude Include="UI\UI.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
