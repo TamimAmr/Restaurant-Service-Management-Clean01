@@ -14,3 +14,8 @@ void CancelAction::Act(Restaurant* pRest)
 
     pRest->CancelOrder(orderID);
 }
+
+void CancelAction::DescribeForUI(std::ostream& os) const
+{
+    os << "(X, " << GetActionTime() << ", " << GetOrderID() << ')';
+}

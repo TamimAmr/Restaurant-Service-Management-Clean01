@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 class Restaurant;
 
 class Action
@@ -16,4 +18,6 @@ public:
     int GetOrderID() const;
 
     virtual void Act(Restaurant* pRest) = 0;
+
+    virtual void DescribeForUI(std::ostream& os) const;
 };

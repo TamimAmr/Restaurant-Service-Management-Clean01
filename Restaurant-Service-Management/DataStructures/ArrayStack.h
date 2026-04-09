@@ -9,7 +9,7 @@ using namespace std;
 template <typename T>
 class ArrayStack : public StackADT<T>
 {
-    enum { MAX_SIZE = 100 };
+    enum { MAX_SIZE = 1024 };
 
 protected:
     T items[MAX_SIZE];

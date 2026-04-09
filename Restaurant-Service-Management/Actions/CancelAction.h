@@ -7,4 +7,6 @@ class CancelAction : public Action
 public:
     CancelAction(int time, int id);
     void Act(Restaurant* pRest);
+
+    void DescribeForUI(std::ostream& os) const override;
 };

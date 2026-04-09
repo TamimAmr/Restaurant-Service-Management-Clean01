@@ -1,10 +1,67 @@
 #include "Restaurant.h"
 
+#include <cstdlib>
+#include <ctime>
+#include <fstream>
 #include <iostream>
 using namespace std;
 
 namespace
 {
+    bool DequeueFirstOrderReady(LinkedQueue<Order*>& q, int currentTimestep, Order*& outOrder)
+    {
+        const int n = q.getCount();
+
+        for (int i = 0; i < n; ++i)
+        {
+            Order* order = nullptr;
+
+            if (!q.dequeue(order))
+            {
+                return false;
+            }
+
+            if (order->GetRequestTimeStep() < currentTimestep)
+            {
+                outOrder = order;
+                return true;
+            }
+
+            q.enqueue(order);
+        }
+
+        outOrder = nullptr;
+        return false;
+    }
+
+    bool DequeueFirstOrderReadyOvg(priQueue<Order*>& pq, int currentTimestep, Order*& outOrder)
+    {
+        priQueue<Order*> temp;
+        Order* order = nullptr;
+        int pri = 0;
+        bool found = false;
+
+        while (pq.dequeue(order, pri))
+        {
+            if (!found && order->GetRequestTimeStep() < currentTimestep)
+            {
+                outOrder = order;
+                found = true;
+            }
+            else
+            {
+                temp.enqueue(order, pri);
+            }
+        }
+
+        while (temp.dequeue(order, pri))
+        {
+            pq.enqueue(order, pri);
+        }
+
+        return found;
+    }
+
     bool CancelCookingOV(priQueue<Order*>& cookingOrders, int id, Order*& removedOrder)
     {
         priQueue<Order*> temp;
@@ -163,4 +220,1090 @@ void Restaurant::PrintSummary() const
     cout << "Free tables: " << Free_Tables.getCount() << endl;
     cout << "Busy sharable tables: " << Busy_Sharable.getCount() << endl;
     cout << "Busy no-share tables: " << Busy_No_Share.getCount() << endl;
+}
+
+int Restaurant::CookingPriority(const Order* order)
+{
+    if (!order)
+    {
+        return 0;
+    }
+
+    if (order->IsDelivery())
+    {
+        return static_cast<int>(order->GetPrice()) + order->GetSize() + order->GetDistance();
+    }
+
+    return static_cast<int>(order->GetPrice()) + order->GetSize() + order->GetRequiredSeats();
+}
+
+int Restaurant::InServicePriority(const Order* order)
+{
+    return CookingPriority(order);
+}
+
+int Restaurant::ScooterFreePriority(const Scooter* s)
+{
+    return s ? (s->GetSpeed() + s->GetID()) : 0;
+}
+
+int Restaurant::TableFitPriority(const Table* t)
+{
+    return t ? (-t->GetSeats()) : 0;
+}
+
+bool Restaurant::TryDequeueRandomPendingOrder(Order*& outOrder, int currentTimestep)
+{
+    int visitOrder[6] = { 0, 1, 2, 3, 4, 5 };
+
+    for (int i = 5; i > 0; --i)
+    {
+        const int j = rand() % (i + 1);
+        const int tmp = visitOrder[i];
+        visitOrder[i] = visitOrder[j];
+        visitOrder[j] = tmp;
+    }
+
+    for (int k = 0; k < 6; ++k)
+    {
+        switch (visitOrder[k])
+        {
+        case 0:
+            if (DequeueFirstOrderReady(PEND_ODG, currentTimestep, outOrder))
+            {
+                return true;
+            }
+            break;
+        case 1:
+            if (DequeueFirstOrderReady(PEND_ODN, currentTimestep, outOrder))
+            {
+                return true;
+            }
+            break;
+        case 2:
+            if (DequeueFirstOrderReady(PEND_OT, currentTimestep, outOrder))
+            {
+                return true;
+            }
+            break;
+        case 3:
+            if (DequeueFirstOrderReady(PEND_OVN, currentTimestep, outOrder))
+            {
+                return true;
+            }
+            break;
+        case 4:
+            if (DequeueFirstOrderReady(PEND_OVC, currentTimestep, outOrder))
+            {
+                return true;
+            }
+            break;
+        case 5:
+            if (DequeueFirstOrderReadyOvg(PEND_OVG, currentTimestep, outOrder))
+            {
+                return true;
+            }
+            break;
+        default:
+            break;
+        }
+    }
+
+    outOrder = nullptr;
+    return false;
+}
+
+bool Restaurant::TryDequeueRandomReadyOrder(Order*& outOrder)
+{
+    int visitOrder[3] = { 0, 1, 2 };
+
+    for (int i = 2; i > 0; --i)
+    {
+        const int j = rand() % (i + 1);
+        const int tmp = visitOrder[i];
+        visitOrder[i] = visitOrder[j];
+        visitOrder[j] = tmp;
+    }
+
+    for (int k = 0; k < 3; ++k)
+    {
+        switch (visitOrder[k])
+        {
+        case 0:
+            if (!RDY_OT.isEmpty())
+            {
+                RDY_OT.dequeue(outOrder);
+                return true;
+            }
+            break;
+        case 1:
+            if (!RDY_OV.isEmpty())
+            {
+                RDY_OV.dequeue(outOrder);
+                return true;
+            }
+            break;
+        case 2:
+            if (!RDY_OD.isEmpty())
+            {
+                RDY_OD.dequeue(outOrder);
+                return true;
+            }
+            break;
+        default:
+            break;
+        }
+    }
+
+    outOrder = nullptr;
+    return false;
+}
+
+bool Restaurant::TryTakeFreeChef(Chef*& outChef)
+{
+    const bool hasCs = !Free_CS.isEmpty();
+    const bool hasCn = !Free_CN.isEmpty();
+
+    if (!hasCs && !hasCn)
+    {
+        outChef = nullptr;
+        return false;
+    }
+
+    if (hasCs && hasCn)
+    {
+        if (rand() % 2 == 0)
+        {
+            Free_CS.dequeue(outChef);
+        }
+        else
+        {
+            Free_CN.dequeue(outChef);
+        }
+        return true;
+    }
+
+    if (hasCs)
+    {
+        Free_CS.dequeue(outChef);
+    }
+    else
+    {
+        Free_CN.dequeue(outChef);
+    }
+
+    return true;
+}
+
+void Restaurant::ReturnChefToFreeList(Chef* chef)
+{
+    if (!chef)
+    {
+        return;
+    }
+
+    if (chef->IsSpecial())
+    {
+        Free_CS.enqueue(chef);
+    }
+    else
+    {
+        Free_CN.enqueue(chef);
+    }
+}
+
+void Restaurant::RouteOrderToReadyList(Order* order)
+{
+    if (!order)
+    {
+        return;
+    }
+
+    switch (order->GetType())
+    {
+    case Order::TYPE_OT:
+        RDY_OT.enqueue(order);
+        break;
+    case Order::TYPE_OVC:
+    case Order::TYPE_OVG:
+    case Order::TYPE_OVN:
+        RDY_OV.enqueue(order);
+        break;
+    case Order::TYPE_ODG:
+    case Order::TYPE_ODN:
+        RDY_OD.enqueue(order);
+        break;
+    default:
+        break;
+    }
+}
+
+bool Restaurant::TryAssignScooterForDelivery(Order* order, int currentTimestep)
+{
+    if (!order || Free_Scooters.isEmpty())
+    {
+        return false;
+    }
+
+    Scooter* scooter = nullptr;
+    int pri = 0;
+
+    if (!Free_Scooters.dequeue(scooter, pri))
+    {
+        return false;
+    }
+
+    order->SetAssignedScooter(scooter);
+    scooter->IncrementAssignedOrders();
+    order->SetInServiceTimeStep(currentTimestep);
+    InServ_Orders.enqueue(order, InServicePriority(order));
+    return true;
+}
+
+bool Restaurant::TryAssignTableForDineIn(Order* order, int currentTimestep)
+{
+    if (!order)
+    {
+        return false;
+    }
+
+    int seats = order->GetRequiredSeats();
+    if (seats <= 0)
+    {
+        seats = 2;
+    }
+
+    int perm[3] = { 0, 1, 2 };
+
+    for (int i = 2; i > 0; --i)
+    {
+        const int j = rand() % (i + 1);
+        const int tmp = perm[i];
+        perm[i] = perm[j];
+        perm[j] = tmp;
+    }
+
+    Table* table = nullptr;
+
+    for (int k = 0; k < 3; ++k)
+    {
+        Fit_Tables* list = nullptr;
+
+        switch (perm[k])
+        {
+        case 0:
+            list = &Free_Tables;
+            break;
+        case 1:
+            list = &Busy_Sharable;
+            break;
+        case 2:
+            list = &Busy_No_Share;
+            break;
+        default:
+            list = nullptr;
+            break;
+        }
+
+        if (list && list->getBest(seats, table))
+        {
+            order->SetAssignedTable(table);
+            order->SetInServiceTimeStep(currentTimestep);
+            InServ_Orders.enqueue(order, InServicePriority(order));
+            return true;
+        }
+
+        table = nullptr;
+    }
+
+    RDY_OD.enqueue(order);
+    return true;
+}
+
+namespace
+{
+    void PrintOrderQueueIds(const char* sectionLabel, LinkedQueue<Order*>& q)
+    {
+        LinkedQueue<Order*> temp;
+        Order* order = nullptr;
+
+        cout << sectionLabel << " — count " << q.getCount() << ", IDs: ";
+
+        while (q.dequeue(order))
+        {
+            cout << order->GetID() << ' ';
+            temp.enqueue(order);
+        }
+
+        while (temp.dequeue(order))
+        {
+            q.enqueue(order);
+        }
+
+        cout << endl;
+    }
+
+    void PrintPendingOvgIds(priQueue<Order*>& pq)
+    {
+        priQueue<Order*> temp;
+        Order* order = nullptr;
+        int pri = 0;
+
+        cout << "Pending OVG — count " << pq.getCount() << ", IDs: ";
+
+        while (pq.dequeue(order, pri))
+        {
+            cout << order->GetID() << ' ';
+            temp.enqueue(order, pri);
+        }
+
+        while (temp.dequeue(order, pri))
+        {
+            pq.enqueue(order, pri);
+        }
+
+        cout << endl;
+    }
+
+    void PrintChefIdsLine(const char* label, LinkedQueue<Chef*>& q)
+    {
+        LinkedQueue<Chef*> temp;
+        Chef* chef = nullptr;
+
+        cout << label << q.getCount() << ": ";
+
+        while (q.dequeue(chef))
+        {
+            cout << chef->GetID() << ' ';
+            temp.enqueue(chef);
+        }
+
+        while (temp.dequeue(chef))
+        {
+            q.enqueue(chef);
+        }
+
+        cout << endl;
+    }
+
+    void PrintScooterIdsPri(priQueue<Scooter*>& pq)
+    {
+        priQueue<Scooter*> temp;
+        Scooter* scooter = nullptr;
+        int pri = 0;
+
+        cout << pq.getCount() << " Scooters: ";
+
+        while (pq.dequeue(scooter, pri))
+        {
+            cout << scooter->GetID() << ' ';
+            temp.enqueue(scooter, pri);
+        }
+
+        while (temp.dequeue(scooter, pri))
+        {
+            pq.enqueue(scooter, pri);
+        }
+
+        cout << endl;
+    }
+
+    void PrintTableListLine(const char* title, Fit_Tables& ft)
+    {
+        priQueue<Table*> temp;
+        Table* table = nullptr;
+        int pri = 0;
+
+        cout << title << ft.getCount() << " tables: ";
+
+        while (ft.dequeue(table, pri))
+        {
+            const int cap = table->GetCapacity();
+            cout << "[T" << table->GetID() << ", " << cap << ", " << cap << "] ";
+            temp.enqueue(table, pri);
+        }
+
+        while (temp.dequeue(table, pri))
+        {
+            ft.enqueue(table, pri);
+        }
+
+        cout << endl;
+    }
+
+    void SwapOrderPtr(Order*& a, Order*& b)
+    {
+        Order* t = a;
+        a = b;
+        b = t;
+    }
+}
+
+void Restaurant::PrintProgramInterface(int currentTimestep)
+{
+    cout << "\nCurrent Timestep: " << currentTimestep << endl;
+    cout << "================================================================" << endl;
+
+    cout << "Actions List" << endl;
+    {
+        const int remaining = ACTIONS_LIST.getCount();
+        LinkedQueue<Action*> temp;
+        Action* action = nullptr;
+        int shown = 0;
+
+        cout << remaining << " actions remaining: ";
+
+        while (ACTIONS_LIST.dequeue(action))
+        {
+            if (shown < 10)
+            {
+                if (shown > 0)
+                {
+                    cout << ", ";
+                }
+
+                action->DescribeForUI(cout);
+                ++shown;
+            }
+
+            temp.enqueue(action);
+        }
+
+        while (temp.dequeue(action))
+        {
+            ACTIONS_LIST.enqueue(action);
+        }
+
+        cout << endl;
+    }
+
+    cout << "Pending Orders IDs" << endl;
+    PrintOrderQueueIds("Pending ODG", PEND_ODG);
+    PrintOrderQueueIds("Pending ODN", PEND_ODN);
+    PrintOrderQueueIds("Pending OT", PEND_OT);
+    PrintOrderQueueIds("Pending OVN", PEND_OVN);
+    PrintOrderQueueIds("Pending OVC", PEND_OVC);
+    PrintPendingOvgIds(PEND_OVG);
+
+    cout << "Available chefs IDs" << endl;
+    PrintChefIdsLine("CS: ", Free_CS);
+    PrintChefIdsLine("CN: ", Free_CN);
+
+    cout << "Cooking orders [Order ID, Chef ID]" << endl;
+    {
+        priQueue<Order*> temp;
+        Order* order = nullptr;
+        int pri = 0;
+
+        cout << Cooking_Orders.getCount() << " cooking orders: ";
+
+        while (Cooking_Orders.dequeue(order, pri))
+        {
+            Chef* ch = order->GetAssignedChef();
+            cout << '[' << order->GetID() << ", " << (ch ? ch->GetID() : -1) << "] ";
+            temp.enqueue(order, pri);
+        }
+
+        while (temp.dequeue(order, pri))
+        {
+            Cooking_Orders.enqueue(order, pri);
+        }
+
+        cout << endl;
+    }
+
+    cout << "Ready Orders IDs" << endl;
+    PrintOrderQueueIds("Ready OT", RDY_OT);
+    PrintOrderQueueIds("Ready OV", RDY_OV);
+    PrintOrderQueueIds("Ready OD", RDY_OD);
+
+    cout << "Available scooters IDs" << endl;
+    PrintScooterIdsPri(Free_Scooters);
+
+    cout << "Available tables (ID, capacity, free seats)" << endl;
+    PrintTableListLine("", Free_Tables);
+
+    cout << "In-Service orders [order ID, scooter/table ID]" << endl;
+    {
+        priQueue<Order*> temp;
+        Order* order = nullptr;
+        int pri = 0;
+
+        cout << InServ_Orders.getCount() << " Orders (delivery first): ";
+
+        while (InServ_Orders.dequeue(order, pri))
+        {
+            if (order->IsDelivery())
+            {
+                Scooter* sc = order->GetAssignedScooter();
+                cout << '[' << order->GetID() << ", S" << (sc ? sc->GetID() : -1) << "] ";
+            }
+
+            temp.enqueue(order, pri);
+        }
+
+        while (temp.dequeue(order, pri))
+        {
+            InServ_Orders.enqueue(order, pri);
+        }
+
+        cout << endl;
+        cout << InServ_Orders.getCount() << " Orders (dine-in): ";
+
+        while (InServ_Orders.dequeue(order, pri))
+        {
+            if (order->IsDineIn())
+            {
+                Table* tb = order->GetAssignedTable();
+                cout << '[' << order->GetID() << ", T" << (tb ? tb->GetID() : -1) << "] ";
+            }
+
+            temp.enqueue(order, pri);
+        }
+
+        while (temp.dequeue(order, pri))
+        {
+            InServ_Orders.enqueue(order, pri);
+        }
+
+        cout << endl;
+    }
+
+    cout << "In-maintenance scooters IDs" << endl;
+    {
+        LinkedQueue<Scooter*> temp;
+        Scooter* scooter = nullptr;
+
+        cout << Maint_Scooters.getCount() << " scooters: ";
+
+        while (Maint_Scooters.dequeue(scooter))
+        {
+            cout << scooter->GetID() << ' ';
+            temp.enqueue(scooter);
+        }
+
+        while (temp.dequeue(scooter))
+        {
+            Maint_Scooters.enqueue(scooter);
+        }
+
+        cout << endl;
+    }
+
+    cout << "Scooters Back to Restaurant IDs" << endl;
+    PrintScooterIdsPri(Back_Scooters);
+
+    cout << "Cancelled Orders IDs" << endl;
+    {
+        LinkedQueue<Order*> temp;
+        Order* order = nullptr;
+
+        cout << Cancelled_orders.getCount() << " cancelled: ";
+
+        while (Cancelled_orders.dequeue(order))
+        {
+            cout << order->GetID() << ' ';
+            temp.enqueue(order);
+        }
+
+        while (temp.dequeue(order))
+        {
+            Cancelled_orders.enqueue(order);
+        }
+
+        cout << endl;
+    }
+
+    cout << "Finished orders IDs (by finish time, descending)" << endl;
+    {
+        const int n = Finished_orders.getCount();
+
+        if (n <= 0)
+        {
+            cout << "0 Orders" << endl;
+        }
+        else
+        {
+            Order* arr[1024];
+            Order* order = nullptr;
+
+            for (int i = 0; i < n; ++i)
+            {
+                Finished_orders.pop(order);
+                arr[i] = order;
+            }
+
+            for (int i = 0; i < n; ++i)
+            {
+                for (int j = i + 1; j < n; ++j)
+                {
+                    if (arr[j]->GetFinishTimeStep() > arr[i]->GetFinishTimeStep())
+                    {
+                        SwapOrderPtr(arr[i], arr[j]);
+                    }
+                }
+            }
+
+            cout << n << " Orders: ";
+
+            for (int i = 0; i < n; ++i)
+            {
+                if (i > 0)
+                {
+                    cout << ", ";
+                }
+
+                cout << arr[i]->GetID();
+            }
+
+            cout << endl;
+
+            for (int i = n - 1; i >= 0; --i)
+            {
+                Finished_orders.push(arr[i]);
+            }
+        }
+    }
+
+    cout << "================================================================" << endl;
+}
+
+void Restaurant::WritePhase2OutputFile(const char* path,
+    int totalOrders,
+    const int orderTypeCounts[6],
+    int totalChefs,
+    int chefsCS,
+    int chefsCN,
+    int totalScooters,
+    int totalTables,
+    long long chefBusySteps,
+    long long scooterBusySteps,
+    int simTimeSteps)
+{
+    ofstream out(path);
+
+    if (!out)
+    {
+        cout << "Error: could not open output file: " << path << endl;
+        return;
+    }
+
+    const int nFin = Finished_orders.getCount();
+    Order* arr[1024];
+    Order* order = nullptr;
+
+    for (int i = 0; i < nFin; ++i)
+    {
+        Finished_orders.pop(order);
+        arr[i] = order;
+    }
+
+    for (int i = 0; i < nFin; ++i)
+    {
+        for (int j = i + 1; j < nFin; ++j)
+        {
+            if (arr[j]->GetFinishTimeStep() > arr[i]->GetFinishTimeStep())
+            {
+                SwapOrderPtr(arr[i], arr[j]);
+            }
+        }
+    }
+
+    out << "Finished orders (Tf, ID, Te, TA, TR, Ts, Tw, Tserv)" << endl;
+
+    for (int i = 0; i < nFin; ++i)
+    {
+        order = arr[i];
+        const int te = order->GetRequestTimeStep();
+        const int ta = order->GetAssignmentTimeStep();
+        const int tr = order->GetReadyTimeStep();
+        const int ts = order->GetInServiceTimeStep();
+        const int tf = order->GetFinishTimeStep();
+
+        int tw = 0;
+
+        if (ta >= 0)
+        {
+            tw = ta - te;
+        }
+
+        int tserv = 0;
+
+        if (tf >= 0 && ts >= 0)
+        {
+            tserv = tf - ts;
+        }
+        else if (tf >= 0 && tr >= 0)
+        {
+            tserv = tf - tr;
+        }
+
+        out << tf << ' ' << order->GetID() << ' ' << te << ' ' << ta << ' ' << tr << ' ' << ts << ' ' << tw << ' ' << tserv << endl;
+    }
+
+    const int nCancel = Cancelled_orders.getCount();
+    const int denomOrders = (totalOrders > 0) ? totalOrders : 1;
+    const double pctFinished = 100.0 * static_cast<double>(nFin) / static_cast<double>(denomOrders);
+    const double pctCancelled = 100.0 * static_cast<double>(nCancel) / static_cast<double>(denomOrders);
+
+    int overwait = 0;
+
+    for (int i = 0; i < nFin; ++i)
+    {
+        order = arr[i];
+        const int te = order->GetRequestTimeStep();
+        const int tf = order->GetFinishTimeStep();
+        const int limit = 40 + order->GetSize() * 8;
+
+        if (tf >= 0 && (tf - te) > limit)
+        {
+            ++overwait;
+        }
+    }
+
+    const double pctOverwait = (nFin > 0) ? (100.0 * static_cast<double>(overwait) / static_cast<double>(nFin)) : 0.0;
+
+    double sumTf = 0.0;
+    double sumTe = 0.0;
+    double sumTer = 0.0;
+
+    for (int i = 0; i < nFin; ++i)
+    {
+        order = arr[i];
+        const int te = order->GetRequestTimeStep();
+        const int tf = order->GetFinishTimeStep();
+        sumTf += static_cast<double>(tf);
+        sumTe += static_cast<double>(te);
+        sumTer += static_cast<double>(tf - te);
+    }
+
+    const double avgTf = (nFin > 0) ? sumTf / nFin : 0.0;
+    const double avgTe = (nFin > 0) ? sumTe / nFin : 0.0;
+    const double avgTer = (nFin > 0) ? sumTer / nFin : 0.0;
+
+    const long long chefDenom = static_cast<long long>(totalChefs) * static_cast<long long>(simTimeSteps > 0 ? simTimeSteps : 1);
+    const long long scooterDenom = static_cast<long long>(totalScooters) * static_cast<long long>(simTimeSteps > 0 ? simTimeSteps : 1);
+    const double chefUtilPct = 100.0 * static_cast<double>(chefBusySteps) / static_cast<double>(chefDenom > 0 ? chefDenom : 1);
+    const double scooterUtilPct = 100.0 * static_cast<double>(scooterBusySteps) / static_cast<double>(scooterDenom > 0 ? scooterDenom : 1);
+
+    out << endl << "--- Statistics ---" << endl;
+    out << "Total orders placed: " << totalOrders << endl;
+    out << "Counts by type — ODG: " << orderTypeCounts[0] << " ODN: " << orderTypeCounts[1] << " OT: " << orderTypeCounts[2]
+        << " OVC: " << orderTypeCounts[3] << " OVG: " << orderTypeCounts[4] << " OVN: " << orderTypeCounts[5] << endl;
+    out << "Total chefs: " << totalChefs << " (CS: " << chefsCS << ", CN: " << chefsCN << ')' << endl;
+    out << "Total scooters: " << totalScooters << " (single class in this build)" << endl;
+    out << "Total tables (initial free pool): " << totalTables << endl;
+    out << "Percentage finished: " << pctFinished << '%' << endl;
+    out << "Percentage cancelled: " << pctCancelled << '%' << endl;
+    out << "Percentage overwait (finished only; threshold Tf-Te > 40+8*size): " << pctOverwait << '%' << endl;
+    out << "Average Tf (finished): " << avgTf << endl;
+    out << "Average Te (finished): " << avgTe << endl;
+    out << "Average Ter = Tf-Te (finished): " << avgTer << endl;
+    out << "Chefs utilization % (busy = orders in cooking / chefs / timesteps): " << chefUtilPct << '%' << endl;
+    out << "Scooters utilization % (busy = not free and not maintenance / scooters / timesteps): " << scooterUtilPct << '%' << endl;
+}
+
+void Restaurant::RunPhase1RandomSimulation(unsigned randomSeed, bool interactiveMode, const char* outputFilePath)
+{
+    srand(randomSeed);
+
+    const int totalSimOrders = 500;
+    const int maxTimeSteps = 200000;
+    const int totalChefsCount = 30;
+    const int chefsCSCount = 10;
+    const int chefsCNCount = 20;
+    const int totalScootersCount = 15;
+    const int totalTablesCount = 10;
+
+    int orderTypeCounts[6] = { 0, 0, 0, 0, 0, 0 };
+    long long chefBusySteps = 0;
+    long long scooterBusySteps = 0;
+
+    const char* outPath = outputFilePath ? outputFilePath : "phase2_output.txt";
+
+    for (int i = 1; i <= 10; ++i)
+    {
+        Chef* cs = new Chef(1000 + i, Chef::TYPE_CS, 5 + (i % 3));
+        Free_CS.enqueue(cs);
+    }
+
+    for (int i = 1; i <= 20; ++i)
+    {
+        Chef* cn = new Chef(2000 + i, Chef::TYPE_CN, 3 + (i % 4));
+        Free_CN.enqueue(cn);
+    }
+
+    for (int i = 1; i <= 15; ++i)
+    {
+        Scooter* sc = new Scooter(3000 + i, 20 + (i % 10), 2);
+        Free_Scooters.enqueue(sc, ScooterFreePriority(sc));
+    }
+
+    const int tableCaps[10] = { 2, 2, 4, 4, 6, 6, 6, 8, 8, 10 };
+
+    for (int i = 0; i < 10; ++i)
+    {
+        Table* tb = new Table(4000 + i + 1, tableCaps[i]);
+        Free_Tables.enqueue(tb, TableFitPriority(tb));
+    }
+
+    for (int n = 1; n <= totalSimOrders; ++n)
+    {
+        const int r = rand() % 6;
+        const Order::Type orderType = static_cast<Order::Type>(r);
+        ++orderTypeCounts[r];
+
+        const int requestTs = rand() % 80;
+        const int orderSize = 1 + (rand() % 5);
+        const double orderPrice = 10.0 + static_cast<double>(rand() % 200);
+        const int seats = 2 + 2 * (rand() % 4);
+        const int duration = 15 + (rand() % 60);
+        const bool share = (rand() % 2) == 0;
+        const int distance = 1 + (rand() % 20);
+
+        Order* newOrder = new Order(
+            n,
+            requestTs,
+            orderSize,
+            orderPrice,
+            orderType,
+            seats,
+            duration,
+            share,
+            distance);
+
+        AddOrderToPendingList(newOrder);
+    }
+
+    int timeStep = 0;
+
+    while (Finished_orders.getCount() + Cancelled_orders.getCount() < totalSimOrders
+        && timeStep < maxTimeSteps)
+    {
+        ++timeStep;
+
+        const int scooterBusyAtStepStart = totalScootersCount - Free_Scooters.getCount() - Maint_Scooters.getCount();
+
+        for (int i = 0; i < 30; ++i)
+        {
+            Order* order = nullptr;
+
+            if (!TryDequeueRandomPendingOrder(order, timeStep))
+            {
+                continue;
+            }
+
+            Chef* chef = nullptr;
+
+            if (!TryTakeFreeChef(chef))
+            {
+                AddOrderToPendingList(order);
+                continue;
+            }
+
+            order->SetAssignedChef(chef);
+            order->SetAssignmentTimeStep(timeStep);
+            Cooking_Orders.enqueue(order, CookingPriority(order));
+        }
+
+        const int cookingAfterAssign = Cooking_Orders.getCount();
+
+        for (int i = 0; i < 15; ++i)
+        {
+            if (rand() % 4 == 0)
+            {
+                continue;
+            }
+
+            if (Cooking_Orders.isEmpty())
+            {
+                continue;
+            }
+
+            Order* cooked = nullptr;
+            int cookPri = 0;
+
+            if (!Cooking_Orders.dequeue(cooked, cookPri))
+            {
+                continue;
+            }
+
+            Chef* chef = cooked->GetAssignedChef();
+            ReturnChefToFreeList(chef);
+            cooked->SetAssignedChef(nullptr);
+            cooked->SetReadyTimeStep(timeStep);
+            RouteOrderToReadyList(cooked);
+        }
+
+        const int cookingAfterReadyBatch = Cooking_Orders.getCount();
+
+        chefBusySteps += static_cast<long long>(cookingAfterAssign + cookingAfterReadyBatch) / 2;
+
+        for (int i = 0; i < 10; ++i)
+        {
+            Order* readyOrder = nullptr;
+
+            if (!TryDequeueRandomReadyOrder(readyOrder))
+            {
+                continue;
+            }
+
+            if (readyOrder->IsTakeaway())
+            {
+                readyOrder->SetInServiceTimeStep(timeStep);
+                readyOrder->SetFinishTimeStep(timeStep);
+                Finished_orders.push(readyOrder);
+                continue;
+            }
+
+            if (readyOrder->IsDelivery())
+            {
+                if (!TryAssignScooterForDelivery(readyOrder, timeStep))
+                {
+                    RouteOrderToReadyList(readyOrder);
+                }
+                continue;
+            }
+
+            if (readyOrder->IsDineIn())
+            {
+                TryAssignTableForDineIn(readyOrder, timeStep);
+                continue;
+            }
+        }
+
+        {
+            const int cancelId = 1 + (rand() % 5000);
+            Order* removed = nullptr;
+
+            if (PEND_OVC.CancelOrder(cancelId, removed))
+            {
+                removed->SetCancelTimeStep(timeStep);
+                Cancelled_orders.enqueue(removed);
+            }
+        }
+
+        {
+            const int cancelId = 1 + (rand() % 5000);
+            Order* removed = nullptr;
+
+            if (RDY_OV.CancelOrder(cancelId, removed))
+            {
+                removed->SetCancelTimeStep(timeStep);
+                Cancelled_orders.enqueue(removed);
+            }
+        }
+
+        {
+            const int cancelId = 1 + (rand() % 5000);
+            Order* removed = nullptr;
+
+            if (CancelCookingOV(Cooking_Orders, cancelId, removed))
+            {
+                Chef* chef = removed->GetAssignedChef();
+                ReturnChefToFreeList(chef);
+                removed->SetAssignedChef(nullptr);
+                removed->SetCancelTimeStep(timeStep);
+                Cancelled_orders.enqueue(removed);
+            }
+        }
+
+        if (rand() % 4 == 0 && !InServ_Orders.isEmpty())
+        {
+            Order* inServ = nullptr;
+            int inPri = 0;
+
+            if (InServ_Orders.dequeue(inServ, inPri))
+            {
+                inServ->SetFinishTimeStep(timeStep);
+                Finished_orders.push(inServ);
+
+                if (inServ->IsDelivery())
+                {
+                    Scooter* scooter = inServ->GetAssignedScooter();
+
+                    if (scooter)
+                    {
+                        inServ->SetAssignedScooter(nullptr);
+                        Back_Scooters.enqueue(scooter, ScooterFreePriority(scooter));
+                    }
+                }
+                else if (inServ->IsDineIn())
+                {
+                    Table* table = inServ->GetAssignedTable();
+
+                    if (table)
+                    {
+                        inServ->SetAssignedTable(nullptr);
+                        Free_Tables.enqueue(table, TableFitPriority(table));
+                    }
+                }
+            }
+        }
+
+        if (rand() % 2 == 0 && !Back_Scooters.isEmpty())
+        {
+            Scooter* scooter = nullptr;
+            int sp = 0;
+
+            if (Back_Scooters.dequeue(scooter, sp))
+            {
+                if (rand() % 2 == 0)
+                {
+                    Free_Scooters.enqueue(scooter, ScooterFreePriority(scooter));
+                }
+                else
+                {
+                    Maint_Scooters.enqueue(scooter);
+                }
+            }
+        }
+
+        if (rand() % 2 == 0 && !Maint_Scooters.isEmpty())
+        {
+            Scooter* scooter = nullptr;
+
+            if (Maint_Scooters.dequeue(scooter))
+            {
+                Free_Scooters.enqueue(scooter, ScooterFreePriority(scooter));
+            }
+        }
+
+        const int scooterBusyAtStepEnd = totalScootersCount - Free_Scooters.getCount() - Maint_Scooters.getCount();
+
+        scooterBusySteps += static_cast<long long>(scooterBusyAtStepStart + scooterBusyAtStepEnd) / 2;
+
+        if (interactiveMode)
+        {
+            PrintProgramInterface(timeStep);
+            cout << "PRESS ANY KEY TO MOVE TO NEXT STEP!" << endl;
+            cin.get();
+        }
+    }
+
+    if (interactiveMode)
+    {
+        cout << "Simulation finished after " << timeStep << " time steps." << endl;
+        cout << "Finished: " << Finished_orders.getCount()
+            << "  Cancelled: " << Cancelled_orders.getCount()
+            << "  (target " << totalSimOrders << ")" << endl;
+
+        if (Finished_orders.getCount() + Cancelled_orders.getCount() < totalSimOrders)
+        {
+            cout << "Warning: stopped before all orders were finished or cancelled (step cap)." << endl;
+        }
+    }
+
+    WritePhase2OutputFile(
+        outPath,
+        totalSimOrders,
+        orderTypeCounts,
+        totalChefsCount,
+        chefsCSCount,
+        chefsCNCount,
+        totalScootersCount,
+        totalTablesCount,
+        chefBusySteps,
+        scooterBusySteps,
+        timeStep);
 }

@@ -26,4 +26,6 @@ public:
         int orderDistance = 0);
 
     void Act(Restaurant* pRest);
+
+    void DescribeForUI(std::ostream& os) const override;
 };

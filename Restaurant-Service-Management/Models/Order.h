@@ -41,6 +41,13 @@ private:
     Scooter* assignedScooter;
     Table* assignedTable;
 
+    // Lifecycle timesteps (-1 = not set yet). Te = requestTimeStep.
+    int assignmentTimeStep;
+    int readyTimeStep;
+    int inServiceTimeStep;
+    int finishTimeStep;
+    int cancelTimeStep;
+
     static const char* TypeToString(Type orderType)
     {
         switch (orderType)
@@ -76,7 +83,12 @@ public:
         distance(orderDistance),
         assignedChef(nullptr),
         assignedScooter(nullptr),
-        assignedTable(nullptr)
+        assignedTable(nullptr),
+        assignmentTimeStep(-1),
+        readyTimeStep(-1),
+        inServiceTimeStep(-1),
+        finishTimeStep(-1),
+        cancelTimeStep(-1)
     {
     }
 
@@ -173,6 +185,56 @@ public:
     void SetAssignedTable(Table* table)
     {
         assignedTable = table;
+    }
+
+    int GetAssignmentTimeStep() const
+    {
+        return assignmentTimeStep;
+    }
+
+    int GetReadyTimeStep() const
+    {
+        return readyTimeStep;
+    }
+
+    int GetInServiceTimeStep() const
+    {
+        return inServiceTimeStep;
+    }
+
+    int GetFinishTimeStep() const
+    {
+        return finishTimeStep;
+    }
+
+    int GetCancelTimeStep() const
+    {
+        return cancelTimeStep;
+    }
+
+    void SetAssignmentTimeStep(int t)
+    {
+        assignmentTimeStep = t;
+    }
+
+    void SetReadyTimeStep(int t)
+    {
+        readyTimeStep = t;
+    }
+
+    void SetInServiceTimeStep(int t)
+    {
+        inServiceTimeStep = t;
+    }
+
+    void SetFinishTimeStep(int t)
+    {
+        finishTimeStep = t;
+    }
+
+    void SetCancelTimeStep(int t)
+    {
+        cancelTimeStep = t;
     }
 
     void Print() const

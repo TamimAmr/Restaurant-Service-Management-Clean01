@@ -31,3 +31,25 @@ void RequestAction::Act(Restaurant* pRest)
     Order* newOrder = new Order(orderID, actionTime, size, price, orderType, seats, duration, canShare, distance);
     pRest->AddOrderToPendingList(newOrder);
 }
+
+namespace
+{
+    const char* OrderTypeUiName(Order::Type t)
+    {
+        switch (t)
+        {
+        case Order::TYPE_ODG: return "ODG";
+        case Order::TYPE_ODN: return "ODN";
+        case Order::TYPE_OT: return "OT";
+        case Order::TYPE_OVC: return "OVC";
+        case Order::TYPE_OVG: return "OVG";
+        case Order::TYPE_OVN: return "OVN";
+        default: return "?";
+        }
+    }
+}
+
+void RequestAction::DescribeForUI(std::ostream& os) const
+{
+    os << '[' << OrderTypeUiName(orderType) << ", " << actionTime << ", " << orderID << ']';
+}

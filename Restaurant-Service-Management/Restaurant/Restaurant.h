@@ -61,4 +61,34 @@ public:
     bool CancelOrder(int id);
 
     void PrintSummary() const;
+
+    /// Phase 1 random simulator: creates >=500 pending orders, runs until all are finished or cancelled.
+    /// Interactive mode prints the program interface each step; silent mode skips console detail (output file always written).
+    void RunPhase1RandomSimulation(unsigned randomSeed, bool interactiveMode, const char* outputFilePath);
+
+private:
+    void PrintProgramInterface(int currentTimestep);
+    void WritePhase2OutputFile(const char* path,
+        int totalOrders,
+        const int orderTypeCounts[6],
+        int totalChefs,
+        int chefsCS,
+        int chefsCN,
+        int totalScooters,
+        int totalTables,
+        long long chefBusySteps,
+        long long scooterBusySteps,
+        int simTimeSteps);
+
+    static int CookingPriority(const Order* order);
+    static int InServicePriority(const Order* order);
+    bool TryDequeueRandomPendingOrder(Order*& outOrder, int currentTimestep);
+    bool TryTakeFreeChef(Chef*& outChef);
+    void ReturnChefToFreeList(Chef* chef);
+    void RouteOrderToReadyList(Order* order);
+    bool TryDequeueRandomReadyOrder(Order*& outOrder);
+    bool TryAssignScooterForDelivery(Order* order, int currentTimestep);
+    bool TryAssignTableForDineIn(Order* order, int currentTimestep);
+    static int ScooterFreePriority(const Scooter* s);
+    static int TableFitPriority(const Table* t);
 };
