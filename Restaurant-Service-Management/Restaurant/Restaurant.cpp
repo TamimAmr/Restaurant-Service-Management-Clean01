@@ -522,12 +522,12 @@ bool Restaurant::TryAssignTableForDineIn(Order* order, int currentTimestep)
 
 namespace
 {
-    void PrintOrderQueueIds(const char* sectionLabel, LinkedQueue<Order*>& q)
+    void PrintOrderQueueIds(const char* orderType, LinkedQueue<Order*>& q)
     {
         LinkedQueue<Order*> temp;
         Order* order = nullptr;
 
-        cout << sectionLabel << " - count " << q.getCount() << ", IDs: ";
+        cout << q.getCount() << ' ' << orderType << ": ";
 
         while (q.dequeue(order))
         {
@@ -549,7 +549,7 @@ namespace
         Order* order = nullptr;
         int pri = 0;
 
-        cout << "Pending OVG - count " << pq.getCount() << ", IDs: ";
+        cout << pq.getCount() << " OVG: ";
 
         while (pq.dequeue(order, pri))
         {
@@ -565,12 +565,12 @@ namespace
         cout << endl;
     }
 
-    void PrintChefIdsLine(const char* label, LinkedQueue<Chef*>& q)
+    void PrintChefIdsLine(const char* typeLabel, LinkedQueue<Chef*>& q)
     {
         LinkedQueue<Chef*> temp;
         Chef* chef = nullptr;
 
-        cout << label << q.getCount() << ": ";
+        cout << q.getCount() << ' ' << typeLabel << " : ";
 
         while (q.dequeue(chef))
         {
@@ -642,9 +642,8 @@ namespace
 void Restaurant::PrintProgramInterface(int currentTimestep)
 {
     cout << "\nCurrent Timestep: " << currentTimestep << endl;
-    cout << "================================================================" << endl;
-
-    cout << "Actions List" << endl;
+    cout << "------------ Actions List ------------" << endl;
+    cout << "For reQuest action: print [Order Type, Trequest, order ID], For cancel print (X, Tcancel, order ID)" << endl;
     {
         const int remaining = ACTIONS_LIST.getCount();
         LinkedQueue<Action*> temp;
@@ -675,21 +674,24 @@ void Restaurant::PrintProgramInterface(int currentTimestep)
         }
 
         cout << endl;
+        cout << "-> Print ONLY the first 10 actions currently in the actions list" << endl;
     }
 
-    cout << "Pending Orders IDs" << endl;
-    PrintOrderQueueIds("Pending ODG", PEND_ODG);
-    PrintOrderQueueIds("Pending ODN", PEND_ODN);
-    PrintOrderQueueIds("Pending OT", PEND_OT);
-    PrintOrderQueueIds("Pending OVN", PEND_OVN);
-    PrintOrderQueueIds("Pending OVC", PEND_OVC);
+    cout << "------------ Pending Orders IDs ------------" << endl;
+    cout << "For each pending list print" << endl;
+    cout << "List count, order type, IDs of all orders in the list" << endl;
+    PrintOrderQueueIds("ODG", PEND_ODG);
+    PrintOrderQueueIds("ODN", PEND_ODN);
+    PrintOrderQueueIds("OT", PEND_OT);
+    PrintOrderQueueIds("OVN", PEND_OVN);
+    PrintOrderQueueIds("OVC", PEND_OVC);
     PrintPendingOvgIds(PEND_OVG);
 
-    cout << "Available chefs IDs" << endl;
-    PrintChefIdsLine("CS: ", Free_CS);
-    PrintChefIdsLine("CN: ", Free_CN);
+    cout << "------------ Available chefs IDs ------------" << endl;
+    PrintChefIdsLine("CS", Free_CS);
+    PrintChefIdsLine("CN", Free_CN);
 
-    cout << "Cooking orders [Order ID, Chef ID]" << endl;
+    cout << "------------ Cooking orders [Orders ID, chef ID] ------------" << endl;
     {
         priQueue<Order*> temp;
         Order* order = nullptr;
@@ -712,24 +714,26 @@ void Restaurant::PrintProgramInterface(int currentTimestep)
         cout << endl;
     }
 
-    cout << "Ready Orders IDs" << endl;
-    PrintOrderQueueIds("Ready OT", RDY_OT);
-    PrintOrderQueueIds("Ready OV", RDY_OV);
-    PrintOrderQueueIds("Ready OD", RDY_OD);
+    cout << "------------ Ready Orders IDs ------------" << endl;
+    cout << "For each Ready list print" << endl;
+    cout << "List count, order type, IDs of all orders in the list" << endl;
+    PrintOrderQueueIds("OT", RDY_OT);
+    PrintOrderQueueIds("OV", RDY_OV);
+    PrintOrderQueueIds("OD", RDY_OD);
 
-    cout << "Available scooters IDs" << endl;
+    cout << "------------ Available scooters IDs ------------" << endl;
     PrintScooterIdsPri(Free_Scooters);
 
-    cout << "Available tables (ID, capacity, free seats)" << endl;
+    cout << "------------ Available tables [ID, capacity, free seats] ------------" << endl;
     PrintTableListLine("", Free_Tables);
 
-    cout << "In-Service orders [order ID, scooter/table ID]" << endl;
+    cout << "------------ In-service orders [order ID, scooter/Table ID] ------------" << endl;
     {
         priQueue<Order*> temp;
         Order* order = nullptr;
         int pri = 0;
 
-        cout << InServ_Orders.getCount() << " Orders (delivery first): ";
+        cout << InServ_Orders.getCount() << " Orders: ";
 
         while (InServ_Orders.dequeue(order, pri))
         {
@@ -746,9 +750,6 @@ void Restaurant::PrintProgramInterface(int currentTimestep)
         {
             InServ_Orders.enqueue(order, pri);
         }
-
-        cout << endl;
-        cout << InServ_Orders.getCount() << " Orders (dine-in): ";
 
         while (InServ_Orders.dequeue(order, pri))
         {
@@ -769,7 +770,7 @@ void Restaurant::PrintProgramInterface(int currentTimestep)
         cout << endl;
     }
 
-    cout << "In-maintenance scooters IDs" << endl;
+    cout << "------------ In-maintainance scooters IDs ------------" << endl;
     {
         LinkedQueue<Scooter*> temp;
         Scooter* scooter = nullptr;
@@ -790,10 +791,10 @@ void Restaurant::PrintProgramInterface(int currentTimestep)
         cout << endl;
     }
 
-    cout << "Scooters Back to Restaurant IDs" << endl;
+    cout << "------------ Scooters Back to Restaurant IDs ------------" << endl;
     PrintScooterIdsPri(Back_Scooters);
 
-    cout << "Cancelled Orders IDs" << endl;
+    cout << "------------ Cancelled Orders IDs ------------" << endl;
     {
         LinkedQueue<Order*> temp;
         Order* order = nullptr;
@@ -814,7 +815,7 @@ void Restaurant::PrintProgramInterface(int currentTimestep)
         cout << endl;
     }
 
-    cout << "Finished orders IDs (by finish time, descending)" << endl;
+    cout << "------------ Finished orders IDs ------------" << endl;
     {
         const int n = Finished_orders.getCount();
 
@@ -865,6 +866,7 @@ void Restaurant::PrintProgramInterface(int currentTimestep)
         }
     }
 
+    cout << "(print IDs of all finished orders in descending order of finish time)" << endl;
     cout << "================================================================" << endl;
 }
 
