@@ -56,7 +56,7 @@ public:
 
     void PrintSummary() const;
 
-    void RunPhase1RandomSimulation(unsigned randomSeed, bool interactiveMode, const char* outputFilePath);
+    void RunPhase1RandomSimulation(unsigned randomSeed, bool interactiveMode, bool useActionDrivenInput, const char* outputFilePath);
 
 private:
     void PrintProgramInterface(int currentTimestep);
