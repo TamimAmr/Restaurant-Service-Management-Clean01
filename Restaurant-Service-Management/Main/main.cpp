@@ -1,15 +1,9 @@
-#include <ctime>
 #include <iostream>
 #include <limits>
 
 #include "../Restaurant/Restaurant.h"
 
 using namespace std;
-
-void RunPhase1RandomSimulation(Restaurant& restaurant, unsigned randomSeed, bool interactiveMode, const char* outputFilePath)
-{
-    restaurant.RunPhase1RandomSimulation(randomSeed, interactiveMode, outputFilePath);
-}
 
 int main()
 {
@@ -28,14 +22,23 @@ int main()
 
     Restaurant restaurant;
 
-    const unsigned seed = static_cast<unsigned>(time(nullptr));
+    char inputFilePath[260] = "";
+    char outputFilePath[260] = "";
 
-    if (interactive)
+    cout << "Enter input file path: ";
+    cin.getline(inputFilePath, 260);
+
+    cout << "Enter output file path: ";
+    cin.getline(outputFilePath, 260);
+
+    if (outputFilePath[0] == '\0')
     {
-        cout << "Random seed: " << seed << endl;
+        restaurant.RunSimulation(inputFilePath, "phase2_output.txt", interactive);
     }
-
-    RunPhase1RandomSimulation(restaurant, seed, interactive, "phase2_output.txt");
+    else
+    {
+        restaurant.RunSimulation(inputFilePath, outputFilePath, interactive);
+    }
 
     if (!interactive)
     {

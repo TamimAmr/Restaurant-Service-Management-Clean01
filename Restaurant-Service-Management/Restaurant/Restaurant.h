@@ -44,8 +44,23 @@ private:
     Fit_Tables Busy_Sharable;
     Fit_Tables Busy_No_Share;
 
+    int Phase2TotalOrders;
+    int Phase2OrderTypeCounts[6];
+    int Phase2TotalChefs;
+    int Phase2ChefsCS;
+    int Phase2ChefsCN;
+    int Phase2TotalScooters;
+    int Phase2TotalTables;
+    int Phase2OverwaitThreshold;
+    long long Phase2ChefBusySteps;
+    long long Phase2ScooterBusySteps;
+    int Phase2LastTimeStep;
+
 public:
     Restaurant();
+
+    bool LoadInputFile(const char* inputFilePath);
+    void RunSimulation(const char* inputFilePath, const char* outputFilePath, bool interactiveMode);
 
     void AddAction(Action* pAction);
     bool ExecuteNextAction();
@@ -59,6 +74,17 @@ public:
     void RunPhase1RandomSimulation(unsigned randomSeed, bool interactiveMode, const char* outputFilePath);
 
 private:
+    void ResetPhase2Stats();
+    void ExecuteActionsAtTimeStep(int currentTimestep);
+    bool IsSimulationFinished() const;
+    void CheckAvailableScooters(int currentTimestep);
+    void CheckFinishedDeliveryOrders(int currentTimestep);
+    void CheckFinishedDineInOrders(int currentTimestep);
+    void AssignStage1(int currentTimestep);
+    void AssignStage2(int currentTimestep);
+    void FinalizeTakeawayOrders(int currentTimestep);
+    void CollectPhase2Statistics(int currentTimestep);
+
     void PrintProgramInterface(int currentTimestep);
     void WritePhase2OutputFile(const char* path,
         int totalOrders,

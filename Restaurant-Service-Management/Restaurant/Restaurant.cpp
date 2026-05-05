@@ -1,6 +1,10 @@
 #include "Restaurant.h"
 
+#include "../Actions/CancelAction.h"
+#include "../Actions/RequestAction.h"
+
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -62,6 +66,52 @@ namespace
         return found;
     }
 
+    bool ParseOrderType(const char* typeText, Order::Type& orderType)
+    {
+        if (strcmp(typeText, "ODG") == 0)
+        {
+            orderType = Order::TYPE_ODG;
+            return true;
+        }
+
+        if (strcmp(typeText, "ODN") == 0)
+        {
+            orderType = Order::TYPE_ODN;
+            return true;
+        }
+
+        if (strcmp(typeText, "OT") == 0)
+        {
+            orderType = Order::TYPE_OT;
+            return true;
+        }
+
+        if (strcmp(typeText, "OVC") == 0)
+        {
+            orderType = Order::TYPE_OVC;
+            return true;
+        }
+
+        if (strcmp(typeText, "OVG") == 0)
+        {
+            orderType = Order::TYPE_OVG;
+            return true;
+        }
+
+        if (strcmp(typeText, "OVN") == 0)
+        {
+            orderType = Order::TYPE_OVN;
+            return true;
+        }
+
+        return false;
+    }
+
+    int OrderTypeIndex(Order::Type orderType)
+    {
+        return static_cast<int>(orderType);
+    }
+
     bool CancelCookingOV(priQueue<Order*>& cookingOrders, int id, Order*& removedOrder)
     {
         priQueue<Order*> temp;
@@ -95,6 +145,293 @@ namespace
 
 Restaurant::Restaurant()
 {
+    ResetPhase2Stats();
+}
+
+void Restaurant::ResetPhase2Stats()
+{
+    Phase2TotalOrders = 0;
+    Phase2TotalChefs = 0;
+    Phase2ChefsCS = 0;
+    Phase2ChefsCN = 0;
+    Phase2TotalScooters = 0;
+    Phase2TotalTables = 0;
+    Phase2OverwaitThreshold = 0;
+    Phase2ChefBusySteps = 0;
+    Phase2ScooterBusySteps = 0;
+    Phase2LastTimeStep = 0;
+
+    for (int i = 0; i < 6; ++i)
+    {
+        Phase2OrderTypeCounts[i] = 0;
+    }
+}
+
+bool Restaurant::LoadInputFile(const char* inputFilePath)
+{
+    ifstream input(inputFilePath);
+
+    if (!input)
+    {
+        cout << "Error: could not open input file: " << inputFilePath << endl;
+        return false;
+    }
+
+    ResetPhase2Stats();
+
+    int cnCount = 0;
+    int csCount = 0;
+    int cnSpeed = 0;
+    int csSpeed = 0;
+    int scooterCount = 0;
+    int scooterSpeed = 0;
+    int scooterMaintenanceOrders = 0;
+    int scooterMaintenanceDuration = 0;
+    int totalTables = 0;
+
+    input >> cnCount >> csCount;
+    input >> cnSpeed >> csSpeed;
+    input >> scooterCount >> scooterSpeed;
+    input >> scooterMaintenanceOrders >> scooterMaintenanceDuration;
+    input >> totalTables;
+
+    Phase2ChefsCS = csCount;
+    Phase2ChefsCN = cnCount;
+    Phase2TotalChefs = csCount + cnCount;
+    Phase2TotalScooters = scooterCount;
+    Phase2TotalTables = totalTables;
+
+    int nextChefId = 1;
+
+    for (int i = 0; i < csCount; ++i)
+    {
+        Free_CS.enqueue(new Chef(nextChefId++, Chef::TYPE_CS, csSpeed));
+    }
+
+    for (int i = 0; i < cnCount; ++i)
+    {
+        Free_CN.enqueue(new Chef(nextChefId++, Chef::TYPE_CN, cnSpeed));
+    }
+
+    for (int i = 1; i <= scooterCount; ++i)
+    {
+        Scooter* scooter = new Scooter(i, scooterSpeed, scooterMaintenanceDuration);
+        Free_Scooters.enqueue(scooter, ScooterFreePriority(scooter));
+    }
+
+    int createdTables = 0;
+    int nextTableId = 1;
+
+    while (createdTables < totalTables && input)
+    {
+        int tableCount = 0;
+        int tableSeats = 0;
+
+        input >> tableCount >> tableSeats;
+
+        if (!input)
+        {
+            cout << "Error: invalid table data in input file." << endl;
+            return false;
+        }
+
+        for (int i = 0; i < tableCount && createdTables < totalTables; ++i)
+        {
+            Table* table = new Table(nextTableId++, tableSeats);
+            Free_Tables.enqueue(table, TableFitPriority(table));
+            ++createdTables;
+        }
+    }
+
+    input >> Phase2OverwaitThreshold;
+
+    if (!input)
+    {
+        cout << "Error: missing overwait threshold in input file." << endl;
+        return false;
+    }
+
+    int actionsCount = 0;
+    input >> actionsCount;
+
+    if (!input)
+    {
+        cout << "Error: missing actions count in input file." << endl;
+        return false;
+    }
+
+    for (int i = 0; i < actionsCount && input; ++i)
+    {
+        char actionType = '\0';
+        input >> actionType;
+
+        if (actionType == 'Q')
+        {
+            char typeText[8] = "";
+            int requestTime = 0;
+            int orderId = 0;
+            int size = 0;
+            double price = 0.0;
+            int seats = 0;
+            int duration = 0;
+            char shareChar = 'N';
+            int distance = 0;
+
+            input >> typeText >> requestTime >> orderId >> size >> price;
+
+            Order::Type orderType = Order::TYPE_ODN;
+
+            if (!ParseOrderType(typeText, orderType))
+            {
+                cout << "Error: unknown order type '" << typeText << "' in input file." << endl;
+                return false;
+            }
+
+            if (orderType == Order::TYPE_ODG || orderType == Order::TYPE_ODN)
+            {
+                input >> seats >> duration >> shareChar;
+            }
+            else if (orderType == Order::TYPE_OVC || orderType == Order::TYPE_OVG || orderType == Order::TYPE_OVN)
+            {
+                input >> distance;
+            }
+
+            const bool canShare = (shareChar == 'Y' || shareChar == 'y');
+            AddAction(new RequestAction(requestTime, orderId, size, price, orderType, seats, duration, canShare, distance));
+
+            ++Phase2TotalOrders;
+            ++Phase2OrderTypeCounts[OrderTypeIndex(orderType)];
+        }
+        else if (actionType == 'X')
+        {
+            int cancelTime = 0;
+            int orderId = 0;
+
+            input >> cancelTime >> orderId;
+            AddAction(new CancelAction(cancelTime, orderId));
+        }
+        else
+        {
+            cout << "Error: unknown action type '" << actionType << "' in input file." << endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void Restaurant::ExecuteActionsAtTimeStep(int currentTimestep)
+{
+    Action* action = nullptr;
+
+    while (ACTIONS_LIST.peek(action) && action && action->GetActionTime() <= currentTimestep)
+    {
+        ACTIONS_LIST.dequeue(action);
+        action->Act(this);
+    }
+}
+
+bool Restaurant::IsSimulationFinished() const
+{
+    return ACTIONS_LIST.isEmpty()
+        && PEND_ODG.isEmpty()
+        && PEND_ODN.isEmpty()
+        && PEND_OT.isEmpty()
+        && PEND_OVN.isEmpty()
+        && PEND_OVC.isEmpty()
+        && PEND_OVG.isEmpty()
+        && Cooking_Orders.isEmpty()
+        && RDY_OT.isEmpty()
+        && RDY_OV.isEmpty()
+        && RDY_OD.isEmpty()
+        && InServ_Orders.isEmpty()
+        && Back_Scooters.isEmpty()
+        && Maint_Scooters.isEmpty();
+}
+
+void Restaurant::CheckAvailableScooters(int currentTimestep)
+{
+    (void)currentTimestep;
+}
+
+void Restaurant::CheckFinishedDeliveryOrders(int currentTimestep)
+{
+    (void)currentTimestep;
+}
+
+void Restaurant::CheckFinishedDineInOrders(int currentTimestep)
+{
+    (void)currentTimestep;
+}
+
+void Restaurant::AssignStage1(int currentTimestep)
+{
+    (void)currentTimestep;
+}
+
+void Restaurant::AssignStage2(int currentTimestep)
+{
+    (void)currentTimestep;
+}
+
+void Restaurant::FinalizeTakeawayOrders(int currentTimestep)
+{
+    (void)currentTimestep;
+}
+
+void Restaurant::CollectPhase2Statistics(int currentTimestep)
+{
+    Phase2LastTimeStep = currentTimestep;
+}
+
+void Restaurant::RunSimulation(const char* inputFilePath, const char* outputFilePath, bool interactiveMode)
+{
+    if (!LoadInputFile(inputFilePath))
+    {
+        return;
+    }
+
+    const int maxTimeSteps = 200000;
+    int currentTimestep = 1;
+
+    while (!IsSimulationFinished() && currentTimestep <= maxTimeSteps)
+    {
+        ExecuteActionsAtTimeStep(currentTimestep);
+        CheckAvailableScooters(currentTimestep);
+        CheckFinishedDeliveryOrders(currentTimestep);
+        CheckFinishedDineInOrders(currentTimestep);
+        AssignStage1(currentTimestep);
+        AssignStage2(currentTimestep);
+        FinalizeTakeawayOrders(currentTimestep);
+        CollectPhase2Statistics(currentTimestep);
+
+        if (interactiveMode)
+        {
+            PrintProgramInterface(currentTimestep);
+            cout << "PRESS ANY KEY TO MOVE TO NEXT STEP!" << endl;
+            cin.get();
+        }
+
+        ++currentTimestep;
+    }
+
+    if (currentTimestep > maxTimeSteps)
+    {
+        cout << "Warning: stopped before all orders were finished or cancelled (step cap)." << endl;
+    }
+
+    WritePhase2OutputFile(
+        outputFilePath,
+        Phase2TotalOrders,
+        Phase2OrderTypeCounts,
+        Phase2TotalChefs,
+        Phase2ChefsCS,
+        Phase2ChefsCN,
+        Phase2TotalScooters,
+        Phase2TotalTables,
+        Phase2ChefBusySteps,
+        Phase2ScooterBusySteps,
+        Phase2LastTimeStep);
 }
 
 void Restaurant::AddAction(Action* pAction)
