@@ -366,7 +366,8 @@ void Restaurant::CheckFinishedDineInOrders(int currentTimestep)
 
 void Restaurant::AssignStage1(int currentTimestep)
 {
-    (void)currentTimestep;
+    AssignPendingOrdersToChefs(currentTimestep);
+    CheckFinishedCookingOrders(currentTimestep);
 }
 
 void Restaurant::AssignStage2(int currentTimestep)
@@ -377,6 +378,95 @@ void Restaurant::AssignStage2(int currentTimestep)
 void Restaurant::FinalizeTakeawayOrders(int currentTimestep)
 {
     (void)currentTimestep;
+}
+
+void Restaurant::AssignPendingOrdersToChefs(int timestep)
+{
+    while (!Free_CS.isEmpty() || !Free_CN.isEmpty())
+    {
+        Order* order = nullptr;
+
+        if (DequeueFirstOrderReady(PEND_ODG, timestep, order)
+            || DequeueFirstOrderReady(PEND_ODN, timestep, order)
+            || DequeueFirstOrderReady(PEND_OT, timestep, order)
+            || DequeueFirstOrderReady(PEND_OVC, timestep, order)
+            || DequeueFirstOrderReadyOvg(PEND_OVG, timestep, order)
+            || DequeueFirstOrderReady(PEND_OVN, timestep, order))
+        {
+            Chef* chef = nullptr;
+            if (!TryTakeFreeChef(chef) || !chef)
+            {
+                AddOrderToPendingList(order);
+                return;
+            }
+
+            order->SetAssignedChef(chef);
+            order->SetAssignmentTimeStep(timestep);
+            Cooking_Orders.enqueue(order, CookingPriority(order));
+            continue;
+        }
+
+        return;
+    }
+}
+
+void Restaurant::CheckFinishedCookingOrders(int timestep)
+{
+    priQueue<Order*> stillCooking;
+    Order* order = nullptr;
+    int pri = 0;
+
+    while (Cooking_Orders.dequeue(order, pri))
+    {
+        Chef* chef = order ? order->GetAssignedChef() : nullptr;
+        const int finishTime = CalculateCookingFinishTime(order, chef);
+
+        if (finishTime > 0 && finishTime <= timestep)
+        {
+            order->SetReadyTimeStep(finishTime);
+            order->SetAssignedChef(nullptr);
+            ReturnChefToFreeList(chef);
+            RouteOrderToReadyList(order);
+        }
+        else
+        {
+            stillCooking.enqueue(order, pri);
+        }
+    }
+
+    while (stillCooking.dequeue(order, pri))
+    {
+        Cooking_Orders.enqueue(order, pri);
+    }
+}
+
+int Restaurant::CalculateCookingFinishTime(Order* order, Chef* chef)
+{
+    if (!order || !chef)
+    {
+        return -1;
+    }
+
+    int speed = chef->GetSpeed();
+    if (speed <= 0)
+    {
+        speed = 1;
+    }
+
+    int size = order->GetSize();
+    if (size <= 0)
+    {
+        size = 1;
+    }
+
+    const int assignment = order->GetAssignmentTimeStep();
+    if (assignment < 0)
+    {
+        return -1;
+    }
+
+    const int cookingSteps = (size + speed - 1) / speed;
+    return assignment + cookingSteps;
 }
 
 void Restaurant::CollectPhase2Statistics(int currentTimestep)

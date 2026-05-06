@@ -83,6 +83,9 @@ private:
     void AssignStage1(int currentTimestep);
     void AssignStage2(int currentTimestep);
     void FinalizeTakeawayOrders(int currentTimestep);
+    void AssignPendingOrdersToChefs(int timestep);
+    void CheckFinishedCookingOrders(int timestep);
+    int CalculateCookingFinishTime(Order* order, Chef* chef);
     void CollectPhase2Statistics(int currentTimestep);
 
     void PrintProgramInterface(int currentTimestep);
