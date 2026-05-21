@@ -11,7 +11,7 @@ bool RDY_OV::CancelOrder(int id, Order*& removedOrder)
     {
         dequeue(current);
 
-        if (!found && current->GetID() == id)
+        if (!found && current->GetID() == id && current->GetType() == Order::TYPE_OVC)
         {
             removedOrder = current;
             found = true;

@@ -13,6 +13,8 @@ private:
     int duration;
     bool canShare;
     int distance;
+    int comboChefs;
+    int comboScooters;
 
 public:
     RequestAction(int time,
@@ -23,7 +25,9 @@ public:
         int neededSeats = 0,
         int orderDuration = 0,
         bool shareAllowed = false,
-        int orderDistance = 0);
+        int orderDistance = 0,
+        int chefsNeeded = 1,
+        int scootersNeeded = 1);
 
     void Act(Restaurant* pRest);
 

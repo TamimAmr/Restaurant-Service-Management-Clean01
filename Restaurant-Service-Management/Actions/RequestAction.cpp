@@ -9,7 +9,9 @@ RequestAction::RequestAction(int time,
     int neededSeats,
     int orderDuration,
     bool shareAllowed,
-    int orderDistance)
+    int orderDistance,
+    int chefsNeeded,
+    int scootersNeeded)
     : Action(time, id),
     size(orderSize),
     price(orderPrice),
@@ -17,7 +19,9 @@ RequestAction::RequestAction(int time,
     seats(neededSeats),
     duration(orderDuration),
     canShare(shareAllowed),
-    distance(orderDistance)
+    distance(orderDistance),
+    comboChefs(chefsNeeded),
+    comboScooters(scootersNeeded)
 {
 }
 
@@ -28,7 +32,7 @@ void RequestAction::Act(Restaurant* pRest)
         return;
     }
 
-    Order* newOrder = new Order(orderID, actionTime, size, price, orderType, seats, duration, canShare, distance);
+    Order* newOrder = new Order(orderID, actionTime, size, price, orderType, seats, duration, canShare, distance, comboChefs, comboScooters);
     pRest->AddOrderToPendingList(newOrder);
 }
 
@@ -44,6 +48,7 @@ namespace
         case Order::TYPE_OVC: return "OVC";
         case Order::TYPE_OVG: return "OVG";
         case Order::TYPE_OVN: return "OVN";
+        case Order::TYPE_OC: return "OC";
         default: return "?";
         }
     }

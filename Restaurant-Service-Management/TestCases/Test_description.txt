@@ -1,0 +1,20 @@
+File1_50_input.txt:
+Small mixed case. Covers all normal order types, combo orders, cancellation actions, takeaway pickup, dine-in tables, and delivery scooters.
+
+File2_100_input.txt:
+Medium mixed case. More delivery orders, combo orders, repeated OVC cancellation attempts, scooter return, and maintenance after several deliveries.
+
+File3_150_input.txt:
+Larger case. Tests long action list loading, all pending lists, combo cooking, cooking list movement, and output sorting by finish time.
+
+File4_200_input.txt:
+Stress case for tables and scooters. It has many overlapping dine-in, delivery, OVG, and combo orders.
+
+File5_250_input.txt:
+Heavy case. Tests utilization statistics, overwait checking, rescue scooter cases, and combo orders over a longer simulation.
+
+File6_300_input.txt:
+Largest sample. Tests most scenarios together and should be used as the main comprehensive test.
+
+Cancellation_Scenario_input.txt:
+Special cancellation test for 4-member teams. It includes an OVC cancelled while cooking, an OVC cancelled while ready and waiting for a scooter, and an OVC cancelled while pending.

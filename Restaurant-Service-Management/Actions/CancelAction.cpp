@@ -12,7 +12,7 @@ void CancelAction::Act(Restaurant* pRest)
         return;
     }
 
-    pRest->CancelOrder(orderID);
+    pRest->CancelOrder(orderID, GetActionTime());
 }
 
 void CancelAction::DescribeForUI(std::ostream& os) const

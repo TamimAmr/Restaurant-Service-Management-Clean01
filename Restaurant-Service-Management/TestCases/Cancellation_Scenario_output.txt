@@ -1,0 +1,20 @@
+TF ID TQ TA TR Ts T1 Tc Tw Tserv
+13 1 1 2 3 3 1 1 2 10
+10 5 4 5 7 7 1 2 3 3
+
+--- Statistics ---
+Total orders placed: 5
+Counts by type - ODG: 0 ODN: 1 OT: 0 OVC: 3 OVG: 0 OVN: 1 OC: 0
+Total chefs: 4 (CS: 1, CN: 3)
+Total scooters: 1
+Total tables: 2
+Percentage finished: 40%
+Percentage cancelled: 60%
+Percentage overwait orders: 0%
+Rescue scooter cases: 0
+Average T1: 1
+Average Tc: 1.5
+Average Tw: 2.5
+Average Tserv: 6.5
+Scooters utilization % (busy = not free and not maintenance / scooters / timesteps): 86.9565%
+Chefs utilization % (busy = preparing an order): 6.52174%

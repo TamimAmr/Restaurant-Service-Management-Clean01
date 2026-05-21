@@ -1,23 +1,15 @@
-#include <iostream>
-#include <limits>
-
 #include "../Restaurant/Restaurant.h"
-
-using namespace std;
+#include "../UI/UI.h"
 
 int main()
 {
-    cout << "Select program mode: (1) Interactive  (2) Silent: ";
-
-    int mode = 2;
-    cin >> mode;
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-
+    UI ui;
+    int mode = ui.ReadMode();
     const bool interactive = (mode == 1);
 
     if (!interactive)
     {
-        cout << "Simulation Starts in Silent mode .." << endl;
+        ui.PrintSilentStart();
     }
 
     Restaurant restaurant;
@@ -25,11 +17,7 @@ int main()
     char inputFilePath[260] = "";
     char outputFilePath[260] = "";
 
-    cout << "Enter input file path: ";
-    cin.getline(inputFilePath, 260);
-
-    cout << "Enter output file path: ";
-    cin.getline(outputFilePath, 260);
+    ui.ReadFilePaths(inputFilePath, outputFilePath, 260);
 
     if (outputFilePath[0] == '\0')
     {
@@ -42,7 +30,7 @@ int main()
 
     if (!interactive)
     {
-        cout << "Simulation ends, Output file created" << endl;
+        ui.PrintSilentEnd();
     }
 
     return 0;

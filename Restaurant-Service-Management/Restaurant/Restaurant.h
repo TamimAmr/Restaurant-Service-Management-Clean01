@@ -23,6 +23,7 @@ private:
     LinkedQueue<Order*> PEND_OVN;
     Pend_OVC PEND_OVC;
     priQueue<Order*> PEND_OVG;
+    LinkedQueue<Order*> PEND_OC;
 
     LinkedQueue<Chef*> Free_CS;
     LinkedQueue<Chef*> Free_CN;
@@ -34,6 +35,8 @@ private:
     LinkedQueue<Order*> RDY_OT;
     RDY_OV RDY_OV;
     LinkedQueue<Order*> RDY_OD;
+    LinkedQueue<Order*> RDY_OC;
+    priQueue<Order*> RDY_OVERWAIT_OVG;
     priQueue<Order*> InServ_Orders;
 
     priQueue<Scooter*> Free_Scooters;
@@ -45,13 +48,16 @@ private:
     Fit_Tables Busy_No_Share;
 
     int Phase2TotalOrders;
-    int Phase2OrderTypeCounts[6];
+    int Phase2OrderTypeCounts[7];
     int Phase2TotalChefs;
     int Phase2ChefsCS;
     int Phase2ChefsCN;
     int Phase2TotalScooters;
     int Phase2TotalTables;
     int Phase2OverwaitThreshold;
+    int Phase2ScooterMaintenanceOrders;
+    int Phase2OverwaitOrders;
+    int Phase2RescueOrders;
     long long Phase2ChefBusySteps;
     long long Phase2ScooterBusySteps;
     int Phase2LastTimeStep;
@@ -68,6 +74,7 @@ public:
 
     void AddOrderToPendingList(Order* pOrder);
     bool CancelOrder(int id);
+    bool CancelOrder(int id, int currentTimestep);
 
     void PrintSummary() const;
 
@@ -78,17 +85,39 @@ private:
     void ExecuteActionsAtTimeStep(int currentTimestep);
     bool IsSimulationFinished() const;
     void CheckAvailableScooters(int currentTimestep);
+    void CheckRescueScooters(int currentTimestep);
     void CheckFinishedDeliveryOrders(int currentTimestep);
     void CheckFinishedDineInOrders(int currentTimestep);
+    void MoveCookingOrdersToReady(int currentTimestep);
     void AssignStage1(int currentTimestep);
     void AssignStage2(int currentTimestep);
     void FinalizeTakeawayOrders(int currentTimestep);
     void CollectPhase2Statistics(int currentTimestep);
+    bool TakeChefForOrder(Order* order, Chef*& chef);
+    void StartCookingOrder(Order* order, Chef* chef, int currentTimestep);
+    bool AssignFromPendingQueue(LinkedQueue<Order*>& pendingList, int currentTimestep);
+    bool AssignFromPendingOvg(int currentTimestep);
+    bool AssignFromPendingCombo(int currentTimestep);
+    bool TakeChefsForCombo(Order* order);
+    void ReturnOrderChefs(Order* order);
+    void StartComboCookingOrder(Order* order, int currentTimestep);
+    int ComboCookingTime(Order* order) const;
+    int CookingTime(Order* order, Chef* chef) const;
+    int DeliveryTime(Order* order, Scooter* scooter) const;
+    void MoveOverwaitOvgOrders(int currentTimestep);
+    bool AssignOverwaitOrder(int currentTimestep);
+    bool AssignComboScooters(Order* order, int currentTimestep);
+    bool DequeueReadyDelivery(bool coldOnly, Order*& outOrder);
+    bool AssignScooter(Order* order, int currentTimestep);
+    bool AssignTable(Order* order, int currentTimestep);
+    bool RemoveTableFromList(Fit_Tables& list, Table* table);
+    void RemoveTableFromWaitingLists(Table* table);
+    void PutTableInRightList(Table* table);
 
     void PrintProgramInterface(int currentTimestep);
     void WritePhase2OutputFile(const char* path,
         int totalOrders,
-        const int orderTypeCounts[6],
+        const int orderTypeCounts[7],
         int totalChefs,
         int chefsCS,
         int chefsCN,

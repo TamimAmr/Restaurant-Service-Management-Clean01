@@ -18,7 +18,8 @@ public:
         TYPE_OT,
         TYPE_OVC,
         TYPE_OVG,
-        TYPE_OVN
+        TYPE_OVN,
+        TYPE_OC
     };
 
 private:
@@ -37,12 +38,20 @@ private:
     Chef* assignedChef;
     Scooter* assignedScooter;
     Table* assignedTable;
+    Chef* assignedChefs[4];
+    Scooter* assignedScooters[4];
+    int assignedChefCount;
+    int assignedScooterCount;
+    int comboChefCount;
+    int comboScooterCount;
 
     int assignmentTimeStep;
     int readyTimeStep;
     int inServiceTimeStep;
     int finishTimeStep;
     int cancelTimeStep;
+    bool overwait;
+    bool rescueUsed;
 
     static const char* TypeToString(Type orderType)
     {
@@ -54,6 +63,7 @@ private:
         case TYPE_OVC: return "OVC";
         case TYPE_OVG: return "OVG";
         case TYPE_OVN: return "OVN";
+        case TYPE_OC:  return "OC";
         default:       return "UNKNOWN";
         }
     }
@@ -67,7 +77,9 @@ public:
         int seatsNeeded = 0,
         int orderDuration = 0,
         bool shareAllowed = false,
-        int orderDistance = 0)
+        int orderDistance = 0,
+        int chefsNeeded = 1,
+        int scootersNeeded = 1)
         : ID(id),
         requestTimeStep(requestTimestep),
         size(orderSize),
@@ -80,12 +92,51 @@ public:
         assignedChef(nullptr),
         assignedScooter(nullptr),
         assignedTable(nullptr),
+        assignedChefCount(0),
+        assignedScooterCount(0),
+        comboChefCount(chefsNeeded),
+        comboScooterCount(scootersNeeded),
         assignmentTimeStep(-1),
         readyTimeStep(-1),
         inServiceTimeStep(-1),
         finishTimeStep(-1),
-        cancelTimeStep(-1)
+        cancelTimeStep(-1),
+        overwait(false),
+        rescueUsed(false)
     {
+        for (int i = 0; i < 4; ++i)
+        {
+            assignedChefs[i] = nullptr;
+            assignedScooters[i] = nullptr;
+        }
+
+        if (type == TYPE_OC)
+        {
+            if (comboChefCount < 2)
+            {
+                comboChefCount = 2;
+            }
+
+            if (comboChefCount > 4)
+            {
+                comboChefCount = 4;
+            }
+
+            if (comboScooterCount < 2)
+            {
+                comboScooterCount = 2;
+            }
+
+            if (comboScooterCount > 4)
+            {
+                comboScooterCount = 4;
+            }
+        }
+        else
+        {
+            comboChefCount = 1;
+            comboScooterCount = 1;
+        }
     }
 
     int GetID() const
@@ -150,7 +201,12 @@ public:
 
     bool IsDelivery() const
     {
-        return type == TYPE_OVC || type == TYPE_OVG || type == TYPE_OVN;
+        return type == TYPE_OVC || type == TYPE_OVG || type == TYPE_OVN || type == TYPE_OC;
+    }
+
+    bool IsCombo() const
+    {
+        return type == TYPE_OC;
     }
 
     Chef* GetAssignedChef() const
@@ -168,14 +224,78 @@ public:
         return assignedTable;
     }
 
+    int GetAssignedChefCount() const
+    {
+        return assignedChefCount;
+    }
+
+    int GetAssignedScooterCount() const
+    {
+        return assignedScooterCount;
+    }
+
+    Chef* GetAssignedChefAt(int index) const
+    {
+        if (index < 0 || index >= assignedChefCount)
+        {
+            return nullptr;
+        }
+
+        return assignedChefs[index];
+    }
+
+    Scooter* GetAssignedScooterAt(int index) const
+    {
+        if (index < 0 || index >= assignedScooterCount)
+        {
+            return nullptr;
+        }
+
+        return assignedScooters[index];
+    }
+
+    int GetComboChefCount() const
+    {
+        return comboChefCount;
+    }
+
+    int GetComboScooterCount() const
+    {
+        return comboScooterCount;
+    }
+
     void SetAssignedChef(Chef* chef)
     {
         assignedChef = chef;
+        assignedChefCount = 0;
+
+        for (int i = 0; i < 4; ++i)
+        {
+            assignedChefs[i] = nullptr;
+        }
+
+        if (chef)
+        {
+            assignedChefs[0] = chef;
+            assignedChefCount = 1;
+        }
     }
 
     void SetAssignedScooter(Scooter* scooter)
     {
         assignedScooter = scooter;
+        assignedScooterCount = 0;
+
+        for (int i = 0; i < 4; ++i)
+        {
+            assignedScooters[i] = nullptr;
+        }
+
+        if (scooter)
+        {
+            assignedScooters[0] = scooter;
+            assignedScooterCount = 1;
+        }
     }
 
     void SetAssignedTable(Table* table)
@@ -208,6 +328,16 @@ public:
         return cancelTimeStep;
     }
 
+    bool HasRescue() const
+    {
+        return rescueUsed;
+    }
+
+    bool IsOverwait() const
+    {
+        return overwait;
+    }
+
     void SetAssignmentTimeStep(int t)
     {
         assignmentTimeStep = t;
@@ -233,6 +363,75 @@ public:
         cancelTimeStep = t;
     }
 
+    void SetOverwait(bool value)
+    {
+        overwait = value;
+    }
+
+    void SetRescueUsed(bool value)
+    {
+        rescueUsed = value;
+    }
+
+    void ClearAssignedChefs()
+    {
+        assignedChef = nullptr;
+        assignedChefCount = 0;
+
+        for (int i = 0; i < 4; ++i)
+        {
+            assignedChefs[i] = nullptr;
+        }
+    }
+
+    bool AddAssignedChef(Chef* chef)
+    {
+        if (!chef || assignedChefCount >= 4)
+        {
+            return false;
+        }
+
+        assignedChefs[assignedChefCount] = chef;
+        assignedChefCount++;
+        assignedChef = assignedChefs[0];
+        return true;
+    }
+
+    void ClearAssignedScooters()
+    {
+        assignedScooter = nullptr;
+        assignedScooterCount = 0;
+
+        for (int i = 0; i < 4; ++i)
+        {
+            assignedScooters[i] = nullptr;
+        }
+    }
+
+    bool AddAssignedScooter(Scooter* scooter)
+    {
+        if (!scooter || assignedScooterCount >= 4)
+        {
+            return false;
+        }
+
+        assignedScooters[assignedScooterCount] = scooter;
+        assignedScooterCount++;
+        assignedScooter = assignedScooters[0];
+        return true;
+    }
+
+    void SetAssignedScooterAt(int index, Scooter* scooter)
+    {
+        if (index < 0 || index >= assignedScooterCount)
+        {
+            return;
+        }
+
+        assignedScooters[index] = scooter;
+        assignedScooter = assignedScooters[0];
+    }
+
     void Print() const
     {
         cout << *this;
@@ -254,6 +453,12 @@ public:
         else if (order.IsDelivery())
         {
             out << " Dist=" << order.distance;
+
+            if (order.IsCombo())
+            {
+                out << " Chefs=" << order.comboChefCount
+                    << " Scooters=" << order.comboScooterCount;
+            }
         }
 
         return out;
